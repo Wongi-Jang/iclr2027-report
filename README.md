@@ -1,0 +1,68 @@
+# ICLR 2027 in numbers
+
+Submission, topic and review statistics for ICLR 2027, with 2024–2026 for comparison.
+Built from the public OpenReview record.
+
+**→ [wongi-jang.github.io/iclr2027-report](https://wongi-jang.github.io/iclr2027-report/)**
+
+## Headline
+
+| Year | Submissions | Growth |
+|---|---|---|
+| 2024 | 7,404 | — |
+| 2025 | 11,672 | +58% |
+| 2026 | 19,814 | +70% |
+| 2027 | **42,790** | **+116%** |
+
+## How it works
+
+```
+scripts/fetch.py       OpenReview → data/raw/<year>.jsonl   (gitignored, ~175 MB)
+scripts/label.py       label every paper against topics.json via the Batch API
+scripts/aggregate.py   → src/data/report.json                (~25 KB, committed)
+npm run build          → dist/, deployed to Pages by .github/workflows/pages.yml
+```
+
+`topics.json` is the taxonomy: 73 research concepts with aliases and
+disambiguation hints. It is meant to be edited — re-run `label.py --submit`
+and `aggregate.py` after changing it.
+
+### Labelling
+
+Each paper's title, keywords and abstract go to Claude Haiku 5.5, which returns
+up to three concept ids. `scripts/eval_labeller.py` measures quality without
+hand-labelling anything: papers whose *titles* name a concept unambiguously must
+receive that concept.
+
+| Configuration | Recall | Labels/paper | Unsupported labels |
+|---|---|---|---|
+| Haiku, loose prompt | 78% | 3.18 | 46% |
+| Haiku, tight prompt | 90% | 2.40 | 34% |
+| **Haiku + thinking** | **100%** | **1.70** | **12%** |
+| Sonnet 5.5 | 100% | 2.08 | 19% |
+
+81,659 of 81,680 papers labelled; 21 batch failures.
+
+## Caveats
+
+- Concepts overlap. A paper carries up to three, so counts do not sum to the total.
+- Withdrawn and desk-rejected papers are excluded from every statistic.
+- ICLR changed its rating scale every year — 1–10 (2024–25), 0–10 (2026), **1–4 (2027)**.
+  Scores are never compared across years.
+- ICLR 2027 submissions are still anonymous, so tables show titles without authors.
+- No 2027 decisions have been released; a high score is not an acceptance.
+
+## Running it
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install openreview-py anthropic
+printf 'OPENREVIEW_USERNAME=...\nOPENREVIEW_PASSWORD=...\nANTHROPIC_API_KEY=...\n' > .env
+.venv/bin/python scripts/fetch.py
+.venv/bin/python scripts/label.py --submit && .venv/bin/python scripts/label.py --collect
+.venv/bin/python scripts/aggregate.py
+npm install && npm run dev
+```
+
+A full re-label of all four years costs roughly $7 on the Batch API.
+
+Not affiliated with ICLR or OpenReview.

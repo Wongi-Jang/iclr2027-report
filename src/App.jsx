@@ -52,8 +52,21 @@ function Header() {
   )
 }
 
+// Recharts axis width is a number, not CSS, so track the viewport for it.
+function useNarrow() {
+  const [narrow, setNarrow] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 640)
+  React.useEffect(() => {
+    const on = () => setNarrow(window.innerWidth < 640)
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  return narrow
+}
+
 function TopicBars() {
   const [all, setAll] = useState(false)
+  const narrow = useNarrow()
   const shown = all ? topics : topics.slice(0, 35)
   const data = shown.map((t) => ({ label: t.label, papers: t.counts[2027] }))
   return (
@@ -65,10 +78,13 @@ function TopicBars() {
       </p>
       <div className="card">
         <ResponsiveContainer width="100%" height={all ? 1850 : 900}>
-          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 56, top: 4, bottom: 4 }}>
+          <BarChart data={data} layout="vertical"
+            margin={{ left: narrow ? 0 : 8, right: narrow ? 42 : 56, top: 4, bottom: 4 }}>
             <CartesianGrid stroke="var(--grid)" horizontal={false} />
             <XAxis type="number" {...axis} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="label" width={236} {...axis} tickLine={false} axisLine={false} interval={0} />
+            <YAxis type="category" dataKey="label" width={narrow ? 128 : 236} {...axis}
+              tickLine={false} axisLine={false} interval={0}
+              tickFormatter={(v) => (narrow && v.length > 20 ? v.slice(0, 19) + '\u2026' : v)} />
             <Tooltip content={<Tip />} cursor={{ fill: 'var(--grid)', opacity: 0.45 }} />
             <Bar dataKey="papers" name="Papers" fill="var(--seq-400)" radius={[0, 4, 4, 0]} barSize={all ? 12 : 16}>
               <LabelList dataKey="papers" position="right" fill="var(--text-secondary)" fontSize={11} formatter={n} />
