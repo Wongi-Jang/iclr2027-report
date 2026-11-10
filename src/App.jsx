@@ -110,7 +110,8 @@ function Trend() {
         everything grows in absolute terms. Pick up to {MAX_SERIES} concepts.
       </p>
       <div className="controls">
-        {topics.slice(0, 28).map((t, i) => {
+        {[...topics.slice(0, 28), ...topics.filter(
+          (t) => picked.includes(t.id) && !topics.slice(0, 28).includes(t))].map((t) => {
           const on = picked.includes(t.id)
           return (
             <button className="chip" key={t.id} aria-pressed={on} onClick={() => toggle(t.id)}
@@ -123,18 +124,14 @@ function Trend() {
       </div>
       <div className="card">
         <ResponsiveContainer width="100%" height={420}>
-          <LineChart data={data} margin={{ left: 4, right: 128, top: 10, bottom: 4 }}>
+          <LineChart data={data} margin={{ left: 4, right: 16, top: 10, bottom: 4 }}>
             <CartesianGrid stroke="var(--grid)" vertical={false} />
             <XAxis dataKey="year" {...axis} tickLine={false} axisLine={{ stroke: 'var(--grid)' }} />
             <YAxis {...axis} tickLine={false} axisLine={false} unit="%" />
             <Tooltip content={<Tip unit="%" />} />
             {picked.map((id, i) => (
               <Line key={id} type="monotone" dataKey={byId[id].label} stroke={SERIES[i % MAX_SERIES]}
-                strokeWidth={2} dot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface-1)' }} activeDot={{ r: 6 }}>
-                <LabelList dataKey={byId[id].label} position="right" fontSize={11}
-                  fill={SERIES[i % MAX_SERIES]}
-                  formatter={(v) => (v === data.at(-1)[byId[id].label] ? `${byId[id].label} ${v}%` : '')} />
-              </Line>
+                strokeWidth={2} dot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface-1)' }} activeDot={{ r: 6 }} />
             ))}
           </LineChart>
         </ResponsiveContainer>
