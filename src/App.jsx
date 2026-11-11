@@ -5,11 +5,12 @@ import {
 } from 'recharts'
 // Each page entry calls init() with its own venue's report before rendering,
 // so one component tree serves every venue without a build-time swap.
-let meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution
+let meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution, topicTop
 let V, MULTIYEAR, ACCEPTED_ONLY, UNIT, PAGES
 
 export function init(report, pages = []) {
   ({ meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution } = report)
+  topicTop = report.topic_top || {}
   YEARS = meta.years
   V = `${meta.venue} ${meta.latest}`
   MULTIYEAR = meta.years.length > 1
@@ -297,6 +298,54 @@ function PaperTable({ rows, caption, note, showSpread }) {
   )
 }
 
+function TopicLeaderboard() {
+  const ids = Object.keys(topicTop)
+  const [pick, setPick] = useState(ids[0])
+  if (ids.length === 0) return null
+  const sel = topicTop[pick]
+  return (
+    <section>
+      <h2>Best-rated work by concept</h2>
+      <p className="note">
+        The highest-rated {meta.latest} papers within one concept, among papers with at least
+        three reviews. Useful for &ldquo;what is the strongest work on world models&rdquo; rather
+        than only &ldquo;what scored highest overall&rdquo;. Ratings are coarse, so ties are
+        common and the order within a tie is by review count, not by merit.
+      </p>
+      <div className="controls">
+        <label className="pickrow">
+          <span>Concept</span>
+          <select value={pick} onChange={(e) => setPick(e.target.value)}>
+            {ids.map((id) => (
+              <option key={id} value={id}>
+                {topicTop[id].label} ({n(topicTop[id].n_rated)})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <table>
+        <thead>
+          <tr><th className="num">#</th><th>Paper</th><th className="num">Mean</th><th className="num">Reviews</th></tr>
+        </thead>
+        <tbody>
+          {sel.papers.map((r, i) => (
+            <tr key={r.id}>
+              <td className="num" style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+              <td><a href={paper(r.id)} target="_blank" rel="noreferrer">{r.title}</a></td>
+              <td className="num">{r.mean.toFixed(2)}</td>
+              <td className="num">{r.n}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="note" style={{ marginTop: 10 }}>
+        {n(sel.n_rated)} rated {meta.latest} papers carry this concept.
+      </p>
+    </section>
+  )
+}
+
 function Method() {
   return (
     <section>
@@ -333,6 +382,7 @@ export default function App() {
       <Ratings />
       <PaperTable rows={top_papers} caption="Highest-rated submissions"
         note={`Top ${top_papers.length} of the labelled ${meta.latest} ${UNIT} by mean reviewer rating, among papers with at least three reviews. On a 1-4 scale ties are common; order within a tie is by review count. A high score here is not an acceptance - no decisions have been released.`} />
+      <TopicLeaderboard />
       <PaperTable rows={contested_papers} showSpread caption="Most contested submissions"
         note={`The ${contested_papers.length} ${meta.latest} papers whose reviewers disagreed most, by standard deviation of their ratings. The Spread column lists the individual ratings.`} />
       <Method />

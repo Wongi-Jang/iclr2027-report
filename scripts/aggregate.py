@@ -92,10 +92,28 @@ def main():
             'mean': round(statistics.mean(rs), 2),
             'sd': round(statistics.pstdev(rs), 2),
             'n': len(rs), 'ratings': rs,
+            'topic_ids': list(p['topics']),
             'topics': [LABEL[t] for t in p['topics']],
         })
     top = sorted(scored, key=lambda r: (-r['mean'], -r['n']))[:30]
     contested = sorted(scored, key=lambda r: (-r['sd'], -r['n']))[:20]
+
+    # best-rated papers within each concept, so a reader can ask "what is the
+    # strongest work on world models" rather than only "what scored highest overall"
+    PER_TOPIC = 5
+    by_topic = collections.defaultdict(list)
+    for r in scored:
+        for t in r['topic_ids']:
+            by_topic[t].append(r)
+    topic_top = {}
+    for t, rows in by_topic.items():
+        best = sorted(rows, key=lambda r: (-r['mean'], -r['n']))[:PER_TOPIC]
+        topic_top[t] = {
+            'label': LABEL[t],
+            'n_rated': len(rows),
+            'papers': [{'id': r['id'], 'title': r['title'], 'mean': r['mean'], 'n': r['n']}
+                       for r in best],
+        }
 
     dist = collections.Counter()
     for p in live:
@@ -124,8 +142,9 @@ def main():
         'topics': topics,
         'risers': movers[:12],
         'fallers': movers[-12:][::-1],
-        'top_papers': top,
-        'contested_papers': contested,
+        'top_papers': [{k: v for k, v in r.items() if k != 'topic_ids'} for r in top],
+        'topic_top': dict(sorted(topic_top.items(), key=lambda kv: -kv[1]['n_rated'])),
+        'contested_papers': [{k: v for k, v in r.items() if k != 'topic_ids'} for r in contested],
         'rating_distribution': dict(sorted(dist.items())),
     }
     path = venues.report_path(venue)
