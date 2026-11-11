@@ -3,9 +3,13 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip, LabelList,
 } from 'recharts'
-import report from './data/report.json'
+import report from '../src/active-report.js'
 
 const { meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution } = report
+const V = `${meta.venue} ${meta.latest}`
+const MULTIYEAR = meta.years.length > 1
+const ACCEPTED_ONLY = meta.corpus === 'accepted-only'
+const UNIT = ACCEPTED_ONLY ? 'accepted papers' : 'submissions'
 const YEARS = meta.years
 const SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)',
   'var(--series-4)', 'var(--series-5)', 'var(--series-7)']
@@ -33,16 +37,18 @@ function Header() {
   const growth = (y, prev) => prev ? `+${Math.round(100 * (meta.submissions[y] / prev - 1))}% vs ${y - 1}` : ''
   return (
     <header className="top">
-      <h1>ICLR 2027 in numbers</h1>
+      <h1>{V} in numbers</h1>
       <p className="sub">
-        Every ICLR 2027 submission, labelled against {meta.n_concepts} research concepts, with
-        2024&ndash;2026 for comparison. Built from the public OpenReview record.
+        Every {V} {ACCEPTED_ONLY ? 'accepted paper' : 'submission'}, labelled against{' '}
+        {meta.n_concepts} research concepts
+        {MULTIYEAR && <>, with {meta.years[0]}&ndash;{meta.years.at(-2)} for comparison</>}.
+        Built from the public OpenReview record.
       </p>
-      <p className="asof">Data as of {meta.as_of}. Reviews are still in progress; no decisions have been released for 2027.</p>
+      <p className="asof">Data as of {meta.as_of}. {meta.corpus_note}</p>
       <div className="tiles">
         {YEARS.map((y, i) => (
-          <div className={`tile${y === 2027 ? ' hero' : ''}`} key={y}>
-            <div className="k">ICLR {y}</div>
+          <div className={`tile${y === meta.latest ? ' hero' : ''}`} key={y}>
+            <div className="k">{meta.venue} {y}</div>
             <div className="v">{n(meta.submissions[y])}</div>
             <div className="d">{growth(y, meta.submissions[YEARS[i - 1]])}</div>
           </div>
@@ -71,10 +77,11 @@ function TopicBars() {
   const data = shown.map((t) => ({ label: t.label, papers: t.counts[2027] }))
   return (
     <section>
-      <h2>What ICLR 2027 is working on</h2>
+      <h2>What {V} is working on</h2>
       <p className="note">
-        Papers per concept among the {n(meta.labelled[2027])} labelled 2027 submissions. A paper can
-        match more than one concept, so these counts overlap and do not sum to the total.
+        Papers per concept among the {n(meta.labelled[meta.latest])} labelled {meta.latest}{' '}
+        {UNIT}. A paper can match more than one concept, so these counts overlap and do not sum
+        to the total.
       </p>
       <div className="card">
         <ResponsiveContainer width="100%" height={all ? 1850 : 900}>
@@ -119,11 +126,11 @@ function Trend() {
 
   return (
     <section>
-      <h2>Four years of concept share</h2>
+      <h2>{meta.years.length} years of concept share</h2>
       <p className="note">
-        Share of each year&rsquo;s labelled submissions that work on a concept. Share, not raw
-        count, because the conference nearly sextupled over these four years &mdash; almost
-        everything grows in absolute terms. Pick up to {MAX_SERIES} concepts.
+        Share of each year&rsquo;s labelled {UNIT} that work on a concept. Share, not raw count,
+        because the conference grew steeply over this period &mdash; almost everything rises in
+        absolute terms. Pick up to {MAX_SERIES} concepts.
       </p>
       <div className="controls">
         {[...topics.slice(0, 28), ...topics.filter(
@@ -201,7 +208,7 @@ function Movers() {
     <section>
       <h2>Risers and fallers</h2>
       <p className="note">
-        Change in share of submissions from ICLR 2026 to ICLR 2027, in percentage points.
+        Change in share of {UNIT} from {meta.venue} {meta.years.at(-2)} to {V}, in percentage points.
         Concepts with fewer than 50 papers across both years are left out as too noisy.
       </p>
       <div className="two">{t(risers, 'Rising')}{t(fallers, 'Falling')}</div>
@@ -213,11 +220,13 @@ function Ratings() {
   const data = Object.entries(rating_distribution).map(([k, v]) => ({ rating: k, reviews: v }))
   return (
     <section>
-      <h2>How ICLR 2027 is scoring papers</h2>
+      <h2>How {V} is scoring papers</h2>
       <p className="note">
-        ICLR 2027 moved to a <strong>1&ndash;4 rating scale</strong>. Earlier years used 1&ndash;10
-        (2024&ndash;25) and 0&ndash;10 (2026), so scores cannot be compared across years and this
-        report never does.
+        {Object.keys(meta.rating_scales).length > 0
+          ? <>Rating scales differ by year ({Object.entries(meta.rating_scales)
+              .map(([y, s]) => `${y}: ${s}`).join(', ')}), so scores are never compared across
+              years in this report.</>
+          : <>Distribution of individual reviewer ratings for {V}.</>}
       </p>
       <div className="card">
         <ResponsiveContainer width="100%" height={260}>
@@ -285,7 +294,7 @@ function Method() {
           <tr><th>Label quality</th><td>Measured on 60 papers whose titles name a concept unambiguously: 100% of those concepts were recovered. 12% of all predicted labels had no matching phrase in the paper text &mdash; some are legitimate synonyms, some are wrong. Treat per-concept counts as accurate to a few percent, not exact.</td></tr>
           <tr><th>Overlap</th><td>Concepts are not mutually exclusive. A paper may carry up to three, so concept counts overlap and shares do not sum to 100%.</td></tr>
           <tr><th>Rating scales</th><td>{YEARS.map((y) => `${y}: ${meta.rating_scales[y]}`).join(', ')}. Never compared across years.</td></tr>
-          <tr><th>2027 authors</th><td>Withheld &mdash; ICLR 2027 is mid-review and submissions are anonymous, so the tables above show titles without authors.</td></tr>
+          <tr><th>Authors</th><td>Where a venue withholds author names during review, the tables above show titles without authors.</td></tr>
           <tr><th>Not shown</th><td>Acceptance rates for 2027: no decisions have been released. Withdrawal rates: withdrawals accumulate until decisions, so 2027&rsquo;s figure is not comparable with a finished year&rsquo;s.</td></tr>
         </tbody>
       </table>
@@ -298,13 +307,13 @@ export default function App() {
     <div className="wrap">
       <Header />
       <TopicBars />
-      <Trend />
-      <Movers />
+      {MULTIYEAR && <Trend />}
+      {MULTIYEAR && <Movers />}
       <Ratings />
       <PaperTable rows={top_papers} caption="Highest-rated submissions"
-        note={`Top ${top_papers.length} of the labelled 2027 submissions by mean reviewer rating, among papers with at least three reviews. On a 1-4 scale ties are common; order within a tie is by review count. A high score here is not an acceptance - no decisions have been released.`} />
+        note={`Top ${top_papers.length} of the labelled ${meta.latest} ${UNIT} by mean reviewer rating, among papers with at least three reviews. On a 1-4 scale ties are common; order within a tie is by review count. A high score here is not an acceptance - no decisions have been released.`} />
       <PaperTable rows={contested_papers} showSpread caption="Most contested submissions"
-        note={`The ${contested_papers.length} papers whose reviewers disagreed most, by standard deviation of their ratings. The Spread column lists the individual ratings.`} />
+        note={`The ${contested_papers.length} ${meta.latest} papers whose reviewers disagreed most, by standard deviation of their ratings. The Spread column lists the individual ratings.`} />
       <Method />
       <footer>
         Built from public OpenReview data. Not affiliated with ICLR or OpenReview.

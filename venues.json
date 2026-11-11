@@ -1,0 +1,56 @@
+{
+  "_comment": "One entry per conference. `corpus` is the single most important field: it says what the visible papers actually are, because that changes what every chart means. Check it with scripts/fetch.py --probe before trusting a new venue.",
+  "venues": {
+    "iclr": {
+      "group": "ICLR.cc/{year}/Conference",
+      "years": [
+        2024,
+        2025,
+        2026,
+        2027
+      ],
+      "corpus": "all-submissions",
+      "corpus_note": "ICLR publishes every submission, so counts measure what the field submits.",
+      "exclude_stages": [
+        "Withdrawn_Submission",
+        "Desk_Rejected_Submission"
+      ],
+      "rating_scales": {
+        "2024": "1-10",
+        "2025": "1-10",
+        "2026": "0-10",
+        "2027": "1-4"
+      }
+    },
+    "neurips": {
+      "group": "NeurIPS.cc/{year}/Conference",
+      "years": [
+        2024,
+        2025
+      ],
+      "corpus": "accepted-only",
+      "corpus_note": "NeurIPS publishes accepted papers plus a small opted-in minority of rejections (~5%). Counts measure what was ACCEPTED, not what was submitted. Acceptance rates and withdrawal rates cannot be computed. NeurIPS also changed its rating scale between 2024 (1-10) and 2025 (1-6); scores are not comparable across those years.",
+      "exclude_stages": [
+        "Withdrawn_Submission",
+        "Desk_Rejected_Submission"
+      ],
+      "rating_scales": {
+        "2024": "1-10",
+        "2025": "1-6"
+      }
+    },
+    "icml": {
+      "group": "ICML.cc/{year}/Conference",
+      "years": [
+        2025
+      ],
+      "corpus": "accepted-only",
+      "corpus_note": "As NeurIPS. ICML 2024 and earlier carry no keywords, primary_area or public reviews, so they are excluded.",
+      "exclude_stages": [
+        "Withdrawn_Submission",
+        "Desk_Rejected_Submission"
+      ],
+      "rating_scales": {}
+    }
+  }
+}

@@ -8,11 +8,10 @@ import argparse, json, os, random, re, sys, time
 
 import anthropic
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import venues
+
+ROOT = venues.ROOT
 MODEL = 'claude-haiku-5-5'
-YEARS = (2024, 2025, 2026, 2027)
-LABELS_PATH = os.path.join(ROOT, 'data', 'labels.jsonl')
-BATCH_IDS_PATH = os.path.join(ROOT, 'data', 'batches.json')
 CHUNK = 20000  # requests per batch job (API caps at 100k / 256MB)
 
 
@@ -68,9 +67,9 @@ def parse(text):
     return [i for i in ids if i in VALID] if isinstance(ids, list) else None
 
 
-def papers(years=YEARS):
-    for y in years:
-        with open(os.path.join(ROOT, 'data', 'raw', f'{y}.jsonl')) as f:
+def papers(venue='iclr', years=None):
+    for y in (years or venues.config(venue)['years']):
+        with open(venues.raw_path(venue, y)) as f:
             for line in f:
                 yield json.loads(line)
 
@@ -87,9 +86,10 @@ def params(p):
     }
 
 
-def cmd_test(n):
+def cmd_test(n, venue='iclr'):
     client = anthropic.Anthropic(api_key=env('ANTHROPIC_API_KEY'))
-    pool = [p for p in papers([2027])]
+    cfg = venues.config(venue)
+    pool = [p for p in papers(venue, [cfg['years'][-1]])]
     random.seed(0)
     sample = random.sample(pool, n)
     tin = tout = 0
@@ -99,18 +99,17 @@ def cmd_test(n):
         tin += r.usage.input_tokens + getattr(r.usage, 'cache_creation_input_tokens', 0) or 0
         tout += r.usage.output_tokens
         print(f"{(p['title'] or '')[:62]:62s} -> {ids}")
-    total = 81680
-    cost = (tin / n * total / 1e6 * 0.10 + tout / n * total / 1e6 * 0.50) / 2
-    print(f'\navg tokens in={tin/n:.0f} out={tout/n:.0f}')
-    print(f'projected batch cost for {total} papers: ${cost:.2f}')
+    print(f'\navg tokens in={tin/n:.0f} out={tout/n:.0f} (cache reads not counted here;'
+          f' see the cost note in README)')
 
 
-def cmd_submit():
+def cmd_submit(venue='iclr'):
     client = anthropic.Anthropic(api_key=env('ANTHROPIC_API_KEY'))
+    lp = venues.labels_path(venue)
     done = set()
-    if os.path.exists(LABELS_PATH):
-        done = {json.loads(l)['id'] for l in open(LABELS_PATH)}
-    todo = [p for p in papers() if p['id'] not in done]
+    if os.path.exists(lp):
+        done = {json.loads(l)['id'] for l in open(lp)}
+    todo = [p for p in papers(venue) if p['id'] not in done]
     print(f'{len(todo)} papers to label')
     ids = []
     for i in range(0, len(todo), CHUNK):
@@ -119,12 +118,12 @@ def cmd_submit():
             {'custom_id': p['id'], 'params': params(p)} for p in chunk])
         ids.append(b.id)
         print(f'  batch {b.id}: {len(chunk)} requests', flush=True)
-    json.dump(ids, open(BATCH_IDS_PATH, 'w'))
+    json.dump(ids, open(venues.batches_path(venue), 'w'))
 
 
-def cmd_collect():
+def cmd_collect(venue='iclr'):
     client = anthropic.Anthropic(api_key=env('ANTHROPIC_API_KEY'))
-    ids = json.load(open(BATCH_IDS_PATH))
+    ids = json.load(open(venues.batches_path(venue)))
     while True:
         states = [client.messages.batches.retrieve(i) for i in ids]
         pend = [s for s in states if s.processing_status != 'ended']
@@ -134,7 +133,7 @@ def cmd_collect():
         print(f'{len(pend)}/{len(ids)} batches running; first: {counts}', flush=True)
         time.sleep(120)
     ok = bad = 0
-    with open(LABELS_PATH, 'a') as out:
+    with open(venues.labels_path(venue), 'a') as out:
         for i in ids:
             for res in client.messages.batches.results(i):
                 if res.result.type != 'succeeded':
@@ -151,12 +150,12 @@ def cmd_collect():
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
+    ap = venues.add_venue_arg(argparse.ArgumentParser())
     ap.add_argument('--test', type=int)
     ap.add_argument('--submit', action='store_true')
     ap.add_argument('--collect', action='store_true')
     a = ap.parse_args()
-    if a.test: cmd_test(a.test)
-    elif a.submit: cmd_submit()
-    elif a.collect: cmd_collect()
+    if a.test: cmd_test(a.test, a.venue)
+    elif a.submit: cmd_submit(a.venue)
+    elif a.collect: cmd_collect(a.venue)
     else: ap.error('pick a mode')

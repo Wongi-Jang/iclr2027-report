@@ -14,12 +14,33 @@ Built from the public OpenReview record.
 | 2026 | 19,814 | +70% |
 | 2027 | **42,790** | **+116%** |
 
+## Other conferences
+
+The pipeline takes `--venue` (`iclr`, `neurips`, `icml`; add more in
+`venues.json`). **Always probe first** — it reports what a venue actually
+exposes:
+
+```bash
+.venv/bin/python scripts/fetch.py --venue neurips --probe
+```
+
+This matters more than it sounds. ICLR publishes **every** submission;
+NeurIPS and ICML publish essentially only **accepted** papers (~95%), so there
+the same charts measure what got *in*, not what was *submitted*, and
+acceptance and withdrawal rates cannot be computed at all. Rating scales also
+move: ICLR ran 1–10, 0–10 then 1–4 across four years; NeurIPS went 1–10 (2024)
+to 1–6 (2025). Never compare scores across years without checking.
+
+`.claude/skills/conference-report/SKILL.md` carries the full judgment
+checklist, including which apparent cost savings are false economies.
+
 ## How it works
 
 ```
-scripts/fetch.py       OpenReview → data/raw/<year>.jsonl   (gitignored, ~175 MB)
+scripts/fetch.py       OpenReview → data/raw/<venue>/<year>.jsonl  (gitignored)
 scripts/label.py       label every paper against topics.json via the Batch API
-scripts/aggregate.py   → src/data/report.json                (~25 KB, committed)
+scripts/aggregate.py   → src/data/report.<venue>.json              (~25 KB, committed)
+src/active-report.js   one line: which venue the built site shows
 npm run build          → dist/, deployed to Pages by .github/workflows/pages.yml
 ```
 
@@ -74,6 +95,8 @@ printf 'OPENREVIEW_USERNAME=...\nOPENREVIEW_PASSWORD=...\nANTHROPIC_API_KEY=...\
 npm install && npm run dev
 ```
 
-A full re-label of all four years costs roughly $7 on the Batch API.
+A full re-label of all four ICLR years costs **$9.06** on the Batch API —
+input, output, cache writes and cache reads, of which output (thinking tokens)
+is 44%. `--test` prints uncached tokens only and understates this.
 
 Not affiliated with ICLR or OpenReview.
