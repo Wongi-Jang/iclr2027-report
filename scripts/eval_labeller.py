@@ -37,8 +37,9 @@ GOLD = {
 ALIASES = {t['id']: [t['label'].lower()] + [a.lower() for a in t['aliases']] for t in L.TOPICS}
 
 
-def build_set(per=4):
-    pool = list(L.papers([2027]))
+def build_set(per=4, venue='iclr', year=None):
+    year = year or L.venues.config(venue)['years'][-1]
+    pool = list(L.papers(venue, [year]))
     random.seed(1)
     cases = []
     for cid, pat in GOLD.items():
