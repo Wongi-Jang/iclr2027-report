@@ -5,17 +5,18 @@ import {
 } from 'recharts'
 // Each page entry calls init() with its own venue's report before rendering,
 // so one component tree serves every venue without a build-time swap.
-let meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution, topicTop
-let V, MULTIYEAR, ACCEPTED_ONLY, UNIT, PAGES
+let meta, topics, risers, fallers, top_papers, rating_distribution, topicTop
+let V, MULTIYEAR, ACCEPTED_ONLY, UNIT, PAGES, CITES
 
 export function init(report, pages = []) {
-  ({ meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution } = report)
+  ({ meta, topics, risers, fallers, top_papers, rating_distribution } = report)
   topicTop = report.topic_top || {}
   YEARS = meta.years
   V = `${meta.venue} ${meta.latest}`
   MULTIYEAR = meta.years.length > 1
   ACCEPTED_ONLY = meta.corpus === 'accepted-only'
   UNIT = ACCEPTED_ONLY ? 'accepted papers' : 'submissions'
+  CITES = !!meta.has_citations
   PAGES = pages
 }
 let YEARS
@@ -26,6 +27,9 @@ const n = (x) => x.toLocaleString('en-US')
 const paper = (id) => `https://openreview.net/forum?id=${id}`
 
 const axis = { stroke: 'var(--text-muted)', fontSize: 12 }
+const cites = (v) => (v === null || v === undefined
+  ? <span title="no confident match in OpenAlex" style={{ color: 'var(--text-muted)' }}>&mdash;</span>
+  : n(v))
 
 function Tip({ active, payload, label, unit = '' }) {
   if (!active || !payload?.length) return null
@@ -263,7 +267,7 @@ function Ratings() {
   )
 }
 
-function PaperTable({ rows, caption, note, showSpread }) {
+function PaperTable({ rows, caption, note }) {
   return (
     <section>
       <h2>{caption}</h2>
@@ -272,8 +276,8 @@ function PaperTable({ rows, caption, note, showSpread }) {
         <thead>
           <tr>
             <th className="num">#</th><th>Paper</th>
-            <th className="num">Mean</th>
-            {showSpread ? <th className="num">Spread</th> : <th className="num">Reviews</th>}
+            <th className="num">Mean</th><th className="num">Reviews</th>
+            {CITES && <th className="num">Citations</th>}
           </tr>
         </thead>
         <tbody>
@@ -285,11 +289,8 @@ function PaperTable({ rows, caption, note, showSpread }) {
                 {r.topics.length > 0 && <div className="chips">{r.topics.map((t) => <span key={t}>{t}</span>)}</div>}
               </td>
               <td className="num">{r.mean.toFixed(2)}</td>
-              <td className="num">
-                {showSpread
-                  ? <span className="spread">{r.ratings.join(' · ')}</span>
-                  : r.n}
-              </td>
+              <td className="num">{r.n}</td>
+              {CITES && <td className="num">{cites(r.cites)}</td>}
             </tr>
           ))}
         </tbody>
@@ -326,7 +327,8 @@ function TopicLeaderboard() {
       </div>
       <table>
         <thead>
-          <tr><th className="num">#</th><th>Paper</th><th className="num">Mean</th><th className="num">Reviews</th></tr>
+          <tr><th className="num">#</th><th>Paper</th><th className="num">Mean</th>
+            <th className="num">Reviews</th>{CITES && <th className="num">Citations</th>}</tr>
         </thead>
         <tbody>
           {sel.papers.map((r, i) => (
@@ -335,6 +337,7 @@ function TopicLeaderboard() {
               <td><a href={paper(r.id)} target="_blank" rel="noreferrer">{r.title}</a></td>
               <td className="num">{r.mean.toFixed(2)}</td>
               <td className="num">{r.n}</td>
+              {CITES && <td className="num">{cites(r.cites)}</td>}
             </tr>
           ))}
         </tbody>
@@ -365,6 +368,10 @@ function Method() {
             <tr><th>Rating scales</th><td>{Object.entries(meta.rating_scales)
               .map(([y, sc]) => `${y}: ${sc}`).join(', ')}. Never compared across years.</td></tr>
           )}
+          {CITES && <tr><th>Citations</th><td>From OpenAlex, matched by exact title. A paper whose
+            title does not match confidently shows &mdash; rather than a number, because a near-miss
+            would attribute another paper&rsquo;s citations to it. Counts move over time; they were
+            fetched on {meta.as_of}.</td></tr>}
           <tr><th>Authors</th><td>Where a venue withholds author names during review, the tables above show titles without authors.</td></tr>
         </tbody>
       </table>
@@ -380,11 +387,9 @@ export default function App() {
       {MULTIYEAR && <Trend />}
       {MULTIYEAR && <Movers />}
       <Ratings />
-      <PaperTable rows={top_papers} caption="Highest-rated submissions"
+      <PaperTable rows={top_papers} caption={`Highest-rated ${UNIT}`}
         note={`Top ${top_papers.length} of the labelled ${meta.latest} ${UNIT} by mean reviewer rating, among papers with at least three reviews. On a 1-4 scale ties are common; order within a tie is by review count. A high score here is not an acceptance - no decisions have been released.`} />
       <TopicLeaderboard />
-      <PaperTable rows={contested_papers} showSpread caption="Most contested submissions"
-        note={`The ${contested_papers.length} ${meta.latest} papers whose reviewers disagreed most, by standard deviation of their ratings. The Spread column lists the individual ratings.`} />
       <Method />
       <footer>
         Built from public OpenReview data. Not affiliated with {meta.venue} or OpenReview.

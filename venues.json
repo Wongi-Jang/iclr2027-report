@@ -26,7 +26,9 @@
         "Label quality": "Measured on 60 ICLR papers whose titles name a concept unambiguously: 100% of those concepts were recovered. 12% of all predicted labels had no matching phrase in the paper text - some are legitimate synonyms, some are wrong. Treat per-concept counts as accurate to a few percent, not exact.",
         "The broad bucket": "“Benchmarks & evaluation (broad)” is the largest concept and the least precise. It catches papers that release a benchmark AND papers that merely evaluate something, so it overstates benchmark releases. Read it as “does evaluation work”, not “ships a benchmark”. The revised taxonomy in topics.json narrows this, and has not been applied to these labels.",
         "Not shown": "Acceptance rates for 2027: no decisions have been released. Withdrawal rates: withdrawals accumulate until decisions, so 2027's figure is not comparable with a finished year's."
-      }
+      },
+      "citations": false,
+      "citations_note": "OFF: ICLR submissions are under review and unpublished, so true counts are zero and a title lookup mostly returns the wrong paper."
     },
     "neurips": {
       "group": "NeurIPS.cc/{year}/Conference",
@@ -50,7 +52,8 @@
         "Not shown": "Acceptance rates and withdrawal rates: rejected and withdrawn submissions are not public at NeurIPS, so there is no denominator to compute them from.",
         "Comparing with the ICLR page": "These labels were made under the 84-concept taxonomy; the ICLR page's were made under an earlier 73-concept one. Each page is internally consistent, but concept shares are not strictly comparable between the two."
       },
-      "_pending": "NeurIPS 2026: the group and a now-expired submission invitation exist, but zero notes are public as of 2026-11-11 and the group does not set public_submissions. NeurIPS publishes accepted papers around the conference (December 2026). Re-probe then and add 2026 to `years`."
+      "_pending": "NeurIPS 2026: the group and a now-expired submission invitation exist, but zero notes are public as of 2026-11-11 and the group does not set public_submissions. NeurIPS publishes accepted papers around the conference (December 2026). Re-probe then and add 2026 to `years`.",
+      "citations": true
     },
     "icml": {
       "group": "ICML.cc/{year}/Conference",
@@ -68,7 +71,8 @@
       "caveats": {
         "Not shown": "Acceptance rates and withdrawal rates: rejected and withdrawn submissions are not public at ICML."
       },
-      "_pending": "ICML 2026 is public and carries abstracts, keywords, primary_area and authors, but NO reviews as of 2026-11-11 - so a report on it would have topic charts and no score sections. ICML 2024 and earlier carry no keywords or primary_area at all."
+      "_pending": "ICML 2026 is public and carries abstracts, keywords, primary_area and authors, but NO reviews as of 2026-11-11 - so a report on it would have topic charts and no score sections. ICML 2024 and earlier carry no keywords or primary_area at all.",
+      "citations": true
     }
   }
 }

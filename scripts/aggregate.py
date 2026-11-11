@@ -34,6 +34,13 @@ def load(venue, years):
     return papers, labels
 
 
+def citations(venue):
+    """Citation counts from a previous scripts/citations.py run, if any.
+    A paper absent here, or mapped to None, simply shows no number."""
+    path = os.path.join(ROOT, 'data', f'citations.{venue}.json')
+    return json.load(open(path)) if os.path.exists(path) else {}
+
+
 def main():
     a = venues.add_venue_arg(argparse.ArgumentParser()).parse_args()
     venue = a.venue
@@ -44,6 +51,7 @@ def main():
     LABEL = {t['id']: t['label'] for t in TOPICS}
     LATEST = YEARS[-1]
     papers, labels = load(venue, YEARS)
+    cites = citations(venue)
     stale = {t for ids in labels.values() for t in ids} - {t['id'] for t in TOPICS}
     if stale:
         raise SystemExit(f'labels reference concepts not in the snapshot: {sorted(stale)} - '
@@ -95,8 +103,7 @@ def main():
             'topic_ids': list(p['topics']),
             'topics': [LABEL[t] for t in p['topics']],
         })
-    top = sorted(scored, key=lambda r: (-r['mean'], -r['n']))[:30]
-    contested = sorted(scored, key=lambda r: (-r['sd'], -r['n']))[:20]
+    top = sorted(scored, key=lambda r: (-r['mean'], -r['n']))[:20]
 
     # best-rated papers within each concept, so a reader can ask "what is the
     # strongest work on world models" rather than only "what scored highest overall"
@@ -111,8 +118,8 @@ def main():
         topic_top[t] = {
             'label': LABEL[t],
             'n_rated': len(rows),
-            'papers': [{'id': r['id'], 'title': r['title'], 'mean': r['mean'], 'n': r['n']}
-                       for r in best],
+            'papers': [{'id': r['id'], 'title': r['title'], 'mean': r['mean'], 'n': r['n'],
+                        'cites': cites.get(r['id'])} for r in best],
         }
 
     dist = collections.Counter()
@@ -138,13 +145,14 @@ def main():
             'caveats': cfg.get('caveats', {}),
             'taxonomy_file': os.path.relpath(venues.snapshot_path(venue), ROOT),
             'n_concepts': len(TOPICS),
+            'has_citations': bool(cites) and cfg.get('citations', False),
         },
         'topics': topics,
         'risers': movers[:12],
         'fallers': movers[-12:][::-1],
-        'top_papers': [{k: v for k, v in r.items() if k != 'topic_ids'} for r in top],
+        'top_papers': [dict({k: v for k, v in r.items() if k != 'topic_ids'},
+                            cites=cites.get(r['id'])) for r in top],
         'topic_top': dict(sorted(topic_top.items(), key=lambda kv: -kv[1]['n_rated'])),
-        'contested_papers': [{k: v for k, v in r.items() if k != 'topic_ids'} for r in contested],
         'rating_distribution': dict(sorted(dist.items())),
     }
     path = venues.report_path(venue)
