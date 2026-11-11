@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -5,4 +6,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/iclr2027-report/',
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      // one page per venue; src/pages.js holds the nav that links them
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        neurips: resolve(__dirname, 'neurips.html'),
+      },
+    },
+  },
 })

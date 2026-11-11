@@ -20,7 +20,8 @@
         "2025": "1-10",
         "2026": "0-10",
         "2027": "1-4"
-      }
+      },
+      "name": "ICLR"
     },
     "neurips": {
       "group": "NeurIPS.cc/{year}/Conference",
@@ -37,7 +38,8 @@
       "rating_scales": {
         "2024": "1-10",
         "2025": "1-6"
-      }
+      },
+      "name": "NeurIPS"
     },
     "icml": {
       "group": "ICML.cc/{year}/Conference",
@@ -50,7 +52,8 @@
         "Withdrawn_Submission",
         "Desk_Rejected_Submission"
       ],
-      "rating_scales": {}
+      "rating_scales": {},
+      "name": "ICML"
     }
   }
 }

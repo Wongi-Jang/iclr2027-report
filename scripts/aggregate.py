@@ -113,7 +113,7 @@ def main():
             'labelled': labelled,
             'excluded_note': 'Withdrawn and desk-rejected papers are excluded from all statistics.',
             'rating_scales': cfg['rating_scales'],
-            'venue': venue.upper(),
+            'venue': cfg.get('name', venue.upper()),
             'latest': LATEST,
             'corpus': cfg['corpus'],
             'corpus_note': cfg['corpus_note'],

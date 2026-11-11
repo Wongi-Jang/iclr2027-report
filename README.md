@@ -3,7 +3,7 @@
 Submission, topic and review statistics for ICLR 2027, with 2024–2026 for comparison.
 Built from the public OpenReview record.
 
-**→ [wongi-jang.github.io/iclr2027-report](https://wongi-jang.github.io/iclr2027-report/)**
+**→ [ICLR 2027](https://wongi-jang.github.io/iclr2027-report/) · [NeurIPS 2025](https://wongi-jang.github.io/iclr2027-report/neurips.html)**
 
 ## Headline
 
@@ -40,7 +40,7 @@ checklist, including which apparent cost savings are false economies.
 scripts/fetch.py       OpenReview → data/raw/<venue>/<year>.jsonl  (gitignored, ~195 MB)
 scripts/label.py       label every paper against topics.json via the Batch API
 scripts/aggregate.py   → src/data/report.<venue>.json              (~25 KB, committed)
-src/active-report.js   one line: which venue the built site shows
+src/pages.js           the published pages and their nav order
 npm run build          → dist/, deployed to Pages by .github/workflows/pages.yml
 ```
 

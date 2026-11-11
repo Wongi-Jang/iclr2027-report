@@ -3,14 +3,21 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip, LabelList,
 } from 'recharts'
-import report from '../src/active-report.js'
+// Each page entry calls init() with its own venue's report before rendering,
+// so one component tree serves every venue without a build-time swap.
+let meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution
+let V, MULTIYEAR, ACCEPTED_ONLY, UNIT, PAGES
 
-const { meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution } = report
-const V = `${meta.venue} ${meta.latest}`
-const MULTIYEAR = meta.years.length > 1
-const ACCEPTED_ONLY = meta.corpus === 'accepted-only'
-const UNIT = ACCEPTED_ONLY ? 'accepted papers' : 'submissions'
-const YEARS = meta.years
+export function init(report, pages = []) {
+  ({ meta, topics, risers, fallers, top_papers, contested_papers, rating_distribution } = report)
+  YEARS = meta.years
+  V = `${meta.venue} ${meta.latest}`
+  MULTIYEAR = meta.years.length > 1
+  ACCEPTED_ONLY = meta.corpus === 'accepted-only'
+  UNIT = ACCEPTED_ONLY ? 'accepted papers' : 'submissions'
+  PAGES = pages
+}
+let YEARS
 const SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)',
   'var(--series-4)', 'var(--series-5)', 'var(--series-7)']
 const MAX_SERIES = SERIES.length
@@ -37,11 +44,20 @@ function Header() {
   const growth = (y, prev) => prev ? `+${Math.round(100 * (meta.submissions[y] / prev - 1))}% vs ${y - 1}` : ''
   return (
     <header className="top">
+      <nav className="venues">
+        {PAGES.map((p) => (
+          p.current
+            ? <strong key={p.href}>{p.name}</strong>
+            : <a key={p.href} href={p.href}>{p.name}</a>
+        ))}
+      </nav>
       <h1>{V} in numbers</h1>
       <p className="sub">
         Every {V} {ACCEPTED_ONLY ? 'accepted paper' : 'submission'}, labelled against{' '}
         {meta.n_concepts} research concepts
-        {MULTIYEAR && <>, with {meta.years[0]}&ndash;{meta.years.at(-2)} for comparison</>}.
+        {MULTIYEAR && <>, with {meta.years.length > 2
+          ? <>{meta.years[0]}&ndash;{meta.years.at(-2)}</>
+          : meta.years[0]} for comparison</>}.
         Built from the public OpenReview record.
       </p>
       <p className="asof">Data as of {meta.as_of}. {meta.corpus_note}</p>
@@ -316,7 +332,7 @@ export default function App() {
         note={`The ${contested_papers.length} ${meta.latest} papers whose reviewers disagreed most, by standard deviation of their ratings. The Spread column lists the individual ratings.`} />
       <Method />
       <footer>
-        Built from public OpenReview data. Not affiliated with ICLR or OpenReview.
+        Built from public OpenReview data. Not affiliated with {meta.venue} or OpenReview.
         Pipeline and concept list: <a href="https://github.com/Wongi-Jang/iclr2027-report">github.com/Wongi-Jang/iclr2027-report</a>.
       </footer>
     </div>
