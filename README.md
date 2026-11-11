@@ -23,9 +23,20 @@ scripts/aggregate.py   → src/data/report.json                (~25 KB, committe
 npm run build          → dist/, deployed to Pages by .github/workflows/pages.yml
 ```
 
-`topics.json` is the taxonomy: 73 research concepts with aliases and
+`topics.json` is the taxonomy: 84 research concepts with aliases and
 disambiguation hints. It is meant to be edited — re-run `label.py --submit`
 and `aggregate.py` after changing it.
+
+**Two taxonomy files, on purpose.** `data/topics.at-labelling.json` is a
+snapshot of the taxonomy the current labels were made under (73 concepts);
+`aggregate.py` reads display names from it, so editing `topics.json` can never
+silently rename data it was never applied to. The published site therefore shows
+73 concepts. After a re-label, copy `topics.json` over the snapshot.
+
+The largest concept, "Benchmarks & evaluation (broad)", is a known catch-all —
+it absorbs anything that evaluates something, not just benchmark releases. The
+revised `topics.json` narrows it and adds 11 concepts (ML systems, agent
+evaluation, data poisoning and others); applying it costs about $9.
 
 ### Labelling
 

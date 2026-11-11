@@ -8,7 +8,12 @@ import json, os, statistics, datetime, collections
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 YEARS = (2024, 2025, 2026, 2027)
 EXCLUDE = ('Withdrawn_Submission', 'Desk_Rejected_Submission')
-TOPICS = json.load(open(os.path.join(ROOT, 'topics.json')))['topics']
+# Display names come from the taxonomy the labels were MADE under, not the current
+# topics.json - otherwise editing a concept silently renames data it never saw.
+# After a re-label, copy topics.json over the snapshot.
+_SNAP = os.path.join(ROOT, 'data', 'topics.at-labelling.json')
+_LIVE = os.path.join(ROOT, 'topics.json')
+TOPICS = json.load(open(_SNAP if os.path.exists(_SNAP) else _LIVE))['topics']
 LABEL = {t['id']: t['label'] for t in TOPICS}
 # ICLR changed its rating scale every year; never compare across years.
 SCALES = {2024: '1-10', 2025: '1-10', 2026: '0-10', 2027: '1-4'}
@@ -34,6 +39,10 @@ def load():
 
 def main():
     papers, labels = load()
+    stale = {t for ids in labels.values() for t in ids} - {t['id'] for t in TOPICS}
+    if stale:
+        raise SystemExit(f'labels reference concepts not in the snapshot: {sorted(stale)} - '
+                         'the snapshot and data/labels.jsonl have drifted apart')
     live = [p for p in papers if p['stage'] not in EXCLUDE]
 
     counts = {y: sum(1 for p in papers if p['year'] == y) for y in YEARS}

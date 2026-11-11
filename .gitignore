@@ -6,4 +6,5 @@ node_modules/
 dist/
 data/*.log
 data/batches.json
+!data/topics.at-labelling.json
 data/labels.jsonl
