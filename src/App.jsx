@@ -90,7 +90,7 @@ function TopicBars() {
   const [all, setAll] = useState(false)
   const narrow = useNarrow()
   const shown = all ? topics : topics.slice(0, 35)
-  const data = shown.map((t) => ({ label: t.label, papers: t.counts[2027] }))
+  const data = shown.map((t) => ({ label: t.label, papers: t.counts[meta.latest] }))
   return (
     <section>
       <h2>What {V} is working on</h2>
@@ -204,7 +204,8 @@ function Movers() {
     <div>
       <h2 style={{ fontSize: 17 }}>{caption}</h2>
       <table>
-        <thead><tr><th>Concept</th><th className="num">2026</th><th className="num">2027</th><th className="num">Change</th></tr></thead>
+        <thead><tr><th>Concept</th><th className="num">{meta.years.at(-2)}</th>
+          <th className="num">{meta.latest}</th><th className="num">Change</th></tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
@@ -303,15 +304,19 @@ function Method() {
       <p className="note">Read this before quoting any number above.</p>
       <table>
         <tbody>
-          <tr><th style={{ width: 190 }}>Source</th><td>The public OpenReview record for ICLR 2024&ndash;2027, fetched {meta.as_of} via the authenticated API.</td></tr>
+          <tr><th style={{ width: 190 }}>Source</th><td>The public OpenReview record for {meta.venue} {meta.years[0]}&ndash;{meta.latest}, fetched {meta.as_of} via the authenticated API.</td></tr>
+          <tr><th>What the corpus is</th><td>{meta.corpus_note}</td></tr>
           <tr><th>What counts</th><td>{meta.excluded_note} Analysed: {YEARS.map((y) => `${y}: ${n(meta.analysed[y])}`).join(', ')}.</td></tr>
-          <tr><th>Concept labels</th><td>Each paper&rsquo;s title, keywords and abstract were labelled against {meta.n_concepts} hand-curated concepts by Claude Haiku 5.5. The exact list used is <code>data/topics.at-labelling.json</code> in the repository; <code>topics.json</code> holds a revised, larger taxonomy that has not been applied to this data yet.</td></tr>
-          <tr><th>The broad bucket</th><td>&ldquo;Benchmarks &amp; evaluation (broad)&rdquo; is the largest concept and the least precise. It catches papers that release a benchmark <em>and</em> papers that merely evaluate something, so it overstates benchmark releases. Read it as &ldquo;does evaluation work&rdquo;, not &ldquo;ships a benchmark&rdquo;.</td></tr>
-          <tr><th>Label quality</th><td>Measured on 60 papers whose titles name a concept unambiguously: 100% of those concepts were recovered. 12% of all predicted labels had no matching phrase in the paper text &mdash; some are legitimate synonyms, some are wrong. Treat per-concept counts as accurate to a few percent, not exact.</td></tr>
+          <tr><th>Concept labels</th><td>Each paper&rsquo;s title, keywords and abstract were labelled against {meta.n_concepts} hand-curated concepts by Claude Haiku 5.5. The exact list used is <code>{meta.taxonomy_file}</code> in the repository.</td></tr>
+          {Object.entries(meta.caveats || {}).map(([k, v]) => (
+            <tr key={k}><th>{k}</th><td>{v}</td></tr>
+          ))}
           <tr><th>Overlap</th><td>Concepts are not mutually exclusive. A paper may carry up to three, so concept counts overlap and shares do not sum to 100%.</td></tr>
-          <tr><th>Rating scales</th><td>{YEARS.map((y) => `${y}: ${meta.rating_scales[y]}`).join(', ')}. Never compared across years.</td></tr>
+          {Object.keys(meta.rating_scales).length > 0 && (
+            <tr><th>Rating scales</th><td>{Object.entries(meta.rating_scales)
+              .map(([y, sc]) => `${y}: ${sc}`).join(', ')}. Never compared across years.</td></tr>
+          )}
           <tr><th>Authors</th><td>Where a venue withholds author names during review, the tables above show titles without authors.</td></tr>
-          <tr><th>Not shown</th><td>Acceptance rates for 2027: no decisions have been released. Withdrawal rates: withdrawals accumulate until decisions, so 2027&rsquo;s figure is not comparable with a finished year&rsquo;s.</td></tr>
         </tbody>
       </table>
     </section>
@@ -333,7 +338,7 @@ export default function App() {
       <Method />
       <footer>
         Built from public OpenReview data. Not affiliated with {meta.venue} or OpenReview.
-        Pipeline and concept list: <a href="https://github.com/Wongi-Jang/iclr2027-report">github.com/Wongi-Jang/iclr2027-report</a>.
+        Pipeline and concept list: <a href="https://github.com/Wongi-Jang/ml-conference-reports">github.com/Wongi-Jang/ml-conference-reports</a>.
       </footer>
     </div>
   )

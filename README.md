@@ -1,9 +1,9 @@
-# ICLR 2027 in numbers
+# ML conference reports
 
-Submission, topic and review statistics for ICLR 2027, with 2024–2026 for comparison.
-Built from the public OpenReview record.
+Submission, topic and review statistics for machine-learning conferences,
+built from the public OpenReview record. Currently ICLR and NeurIPS.
 
-**→ [ICLR 2027](https://wongi-jang.github.io/iclr2027-report/) · [NeurIPS 2025](https://wongi-jang.github.io/iclr2027-report/neurips.html)**
+**→ [ICLR 2027](https://wongi-jang.github.io/ml-conference-reports/) · [NeurIPS 2025](https://wongi-jang.github.io/ml-conference-reports/neurips.html)**
 
 ## Headline
 

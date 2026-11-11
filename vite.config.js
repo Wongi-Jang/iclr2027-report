@@ -2,9 +2,9 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Project-page deploy: served from https://wongi-jang.github.io/iclr2027-report/
+// Project-page deploy: served from https://wongi-jang.github.io/ml-conference-reports/
 export default defineConfig({
-  base: '/iclr2027-report/',
+  base: '/ml-conference-reports/',
   plugins: [react()],
   build: {
     rollupOptions: {

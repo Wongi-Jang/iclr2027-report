@@ -1,5 +1,5 @@
 {
-  "_comment": "One entry per conference. `corpus` is the single most important field: it says what the visible papers actually are, because that changes what every chart means. Check it with scripts/fetch.py --probe before trusting a new venue.",
+  "_comment": "One entry per conference. `corpus` is the single most important field: it says what the visible papers actually are, because that changes what every chart means. Check it with scripts/fetch.py --probe before trusting a new venue. `caveats` are per-venue method-section rows; the site renders whichever are present, so a venue never inherits another's claims.",
   "venues": {
     "iclr": {
       "group": "ICLR.cc/{year}/Conference",
@@ -21,7 +21,12 @@
         "2026": "0-10",
         "2027": "1-4"
       },
-      "name": "ICLR"
+      "name": "ICLR",
+      "caveats": {
+        "Label quality": "Measured on 60 ICLR papers whose titles name a concept unambiguously: 100% of those concepts were recovered. 12% of all predicted labels had no matching phrase in the paper text - some are legitimate synonyms, some are wrong. Treat per-concept counts as accurate to a few percent, not exact.",
+        "The broad bucket": "“Benchmarks & evaluation (broad)” is the largest concept and the least precise. It catches papers that release a benchmark AND papers that merely evaluate something, so it overstates benchmark releases. Read it as “does evaluation work”, not “ships a benchmark”. The revised taxonomy in topics.json narrows this, and has not been applied to these labels.",
+        "Not shown": "Acceptance rates for 2027: no decisions have been released. Withdrawal rates: withdrawals accumulate until decisions, so 2027's figure is not comparable with a finished year's."
+      }
     },
     "neurips": {
       "group": "NeurIPS.cc/{year}/Conference",
@@ -39,7 +44,12 @@
         "2024": "1-10",
         "2025": "1-6"
       },
-      "name": "NeurIPS"
+      "name": "NeurIPS",
+      "caveats": {
+        "Label quality": "Measured on 55 NeurIPS papers whose titles name a concept unambiguously: 96% of those concepts were recovered, and 9% of predicted labels had no matching phrase in the paper text. Treat per-concept counts as accurate to a few percent, not exact.",
+        "Not shown": "Acceptance rates and withdrawal rates: rejected and withdrawn submissions are not public at NeurIPS, so there is no denominator to compute them from.",
+        "Comparing with the ICLR page": "These labels were made under the 84-concept taxonomy; the ICLR page's were made under an earlier 73-concept one. Each page is internally consistent, but concept shares are not strictly comparable between the two."
+      }
     },
     "icml": {
       "group": "ICML.cc/{year}/Conference",
@@ -53,7 +63,10 @@
         "Desk_Rejected_Submission"
       ],
       "rating_scales": {},
-      "name": "ICML"
+      "name": "ICML",
+      "caveats": {
+        "Not shown": "Acceptance rates and withdrawal rates: rejected and withdrawn submissions are not public at ICML."
+      }
     }
   }
 }

@@ -117,6 +117,8 @@ def main():
             'latest': LATEST,
             'corpus': cfg['corpus'],
             'corpus_note': cfg['corpus_note'],
+            'caveats': cfg.get('caveats', {}),
+            'taxonomy_file': os.path.relpath(venues.snapshot_path(venue), ROOT),
             'n_concepts': len(TOPICS),
         },
         'topics': topics,
