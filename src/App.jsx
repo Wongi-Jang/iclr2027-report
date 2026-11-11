@@ -388,7 +388,11 @@ export default function App() {
       {MULTIYEAR && <Movers />}
       <Ratings />
       <PaperTable rows={top_papers} caption={`Highest-rated ${UNIT}`}
-        note={`Top ${top_papers.length} of the labelled ${meta.latest} ${UNIT} by mean reviewer rating, among papers with at least three reviews. On a 1-4 scale ties are common; order within a tie is by review count. A high score here is not an acceptance - no decisions have been released.`} />
+        note={`Top ${top_papers.length} of the labelled ${meta.latest} ${UNIT} by mean reviewer`
+          + ` rating, among papers with at least three reviews.`
+          + (meta.rating_scales[meta.latest] ? ` On a ${meta.rating_scales[meta.latest]} scale ties`
+             + ` are common; order within a tie is by review count.` : '')
+          + (ACCEPTED_ONLY ? '' : ' A high score here is not an acceptance - no decisions have been released.')} />
       <TopicLeaderboard />
       <Method />
       <footer>
