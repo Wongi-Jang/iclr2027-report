@@ -5,6 +5,6 @@ data/.or_token.json
 node_modules/
 dist/
 data/*.log
-data/batches.json
+data/batches*.json
 !data/topics.at-labelling.json
-data/labels.jsonl
+data/labels*.jsonl
