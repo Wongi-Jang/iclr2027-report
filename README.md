@@ -37,12 +37,17 @@ checklist, including which apparent cost savings are false economies.
 ## How it works
 
 ```
-scripts/fetch.py       OpenReview → data/raw/<venue>/<year>.jsonl  (gitignored)
+scripts/fetch.py       OpenReview → data/raw/<venue>/<year>.jsonl  (gitignored, ~195 MB)
 scripts/label.py       label every paper against topics.json via the Batch API
 scripts/aggregate.py   → src/data/report.<venue>.json              (~25 KB, committed)
 src/active-report.js   one line: which venue the built site shows
 npm run build          → dist/, deployed to Pages by .github/workflows/pages.yml
 ```
+
+`data/labels.<venue>.jsonl` is committed on purpose: it is the output of about
+$10 of API spend, carries no abstracts, and lets anyone reproduce every
+published number by running `aggregate.py` alone. Only the raw papers are
+gitignored.
 
 `topics.json` is the taxonomy: 84 research concepts with aliases and
 disambiguation hints. It is meant to be edited — re-run `label.py --submit`
@@ -99,4 +104,11 @@ A full re-label of all four ICLR years costs **$9.06** on the Batch API —
 input, output, cache writes and cache reads, of which output (thinking tokens)
 is 44%. `--test` prints uncached tokens only and understates this.
 
-Not affiliated with ICLR or OpenReview.
+## Venues covered
+
+| Venue | Years | Papers | Corpus |
+|---|---|---|---|
+| ICLR | 2024–2027 | 81,680 | all submissions |
+| NeurIPS | 2024–2025 | 9,776 | accepted only |
+
+Not affiliated with ICLR, NeurIPS or OpenReview.

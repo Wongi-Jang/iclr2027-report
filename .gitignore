@@ -6,5 +6,8 @@ node_modules/
 dist/
 data/*.log
 data/batches*.json
-!data/topics.at-labelling.json
-data/labels*.jsonl
+
+# Labels ARE committed, deliberately: they are the expensive artifact (~$10 of
+# API spend), they carry no abstracts, and they compress to a fraction of their
+# size. Anyone can re-run aggregate.py and reproduce every published number
+# without paying to re-label. Raw papers stay local - those are the big files.
