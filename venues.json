@@ -53,7 +53,8 @@
         "Comparing with the ICLR page": "These labels were made under the 84-concept taxonomy; the ICLR page's were made under an earlier 73-concept one. Each page is internally consistent, but concept shares are not strictly comparable between the two."
       },
       "_pending": "NeurIPS 2026: the group and a now-expired submission invitation exist, but zero notes are public as of 2026-11-11 and the group does not set public_submissions. NeurIPS publishes accepted papers around the conference (December 2026). Re-probe then and add 2026 to `years`.",
-      "citations": true
+      "citations": true,
+      "openalex_source": "S4363606243"
     },
     "icml": {
       "group": "ICML.cc/{year}/Conference",

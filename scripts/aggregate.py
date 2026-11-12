@@ -77,6 +77,68 @@ def main():
         topics.append(row)
     topics.sort(key=lambda r: -r['counts'][LATEST])
 
+    # --- research-direction signals, per concept, for the latest year ---------
+    # Ratings are z-scored WITHIN a year because the scale changes between
+    # years; raw means are not comparable and z-scores are.
+    def year_rows(y):
+        out = collections.defaultdict(list)
+        for p in live:
+            if p['year'] != y:
+                continue
+            rs = [r['rating'] for r in p['reviews'] if r['rating'] is not None]
+            mean = statistics.mean(rs) if rs else None
+            accepted = None if p['stage'] not in ('Conference', 'Rejected_Submission') \
+                else p['stage'] == 'Conference'
+            for t in set(p['topics']):
+                out[t].append((mean, accepted, cites.get(p['id'])))
+        return out
+
+    def signals(y):
+        rows = year_rows(y)
+        allr = [m for v in rows.values() for m, _, _ in v if m is not None]
+        mu = statistics.mean(allr) if allr else 0
+        sd = statistics.pstdev(allr) if len(allr) > 1 else 0
+        out = {}
+        for t, v in rows.items():
+            ms = [m for m, _, _ in v if m is not None]
+            ac = [a for _, a, _ in v if a is not None]
+            cs = [c for _, _, c in v if c is not None]
+            out[t] = {
+                'n': len(v),
+                'rating_z': round((statistics.mean(ms) - mu) / sd, 3) if ms and sd else None,
+                'acc': round(100 * sum(ac) / len(ac), 1) if ac else None,
+                'cites_median': statistics.median(cs) if cs else None,
+                'cites_n': len(cs),
+            }
+        return out
+
+    cur = signals(LATEST)
+    prev = signals(YEARS[-2]) if len(YEARS) > 1 else {}
+    # the last year that actually has decisions - acceptance is undefined before then
+    decided = next((y for y in reversed(YEARS) if any(
+        p['stage'] in ('Conference', 'Rejected_Submission') for p in live if p['year'] == y)), None)
+    dec_cur = signals(decided) if decided else {}
+    dec_prev = signals(YEARS[YEARS.index(decided) - 1]) if decided and YEARS.index(decided) > 0 else {}
+
+    directions = []
+    for r in topics:
+        t = r['id']
+        c = cur.get(t)
+        if not c or c['n'] < 40:          # too few papers for any of this to mean anything
+            continue
+        acc = dec_cur.get(t, {}).get('acc')
+        acc_prev = dec_prev.get(t, {}).get('acc')
+        directions.append({
+            'id': t, 'label': r['label'], 'n': c['n'],
+            'share': r['share'][LATEST],
+            'growth': round(r['share'][LATEST] - r['share'][YEARS[-2]], 3) if len(YEARS) > 1 else None,
+            'rating_z': c['rating_z'],
+            'acc': acc,
+            'acc_delta': round(acc - acc_prev, 1) if acc is not None and acc_prev is not None else None,
+            'cites_median': c['cites_median'],
+            'cites_n': c['cites_n'],
+        })
+
     movers = sorted(
         ({'id': r['id'], 'label': r['label'],
           'from': r['share'][YEARS[-2]] if len(YEARS) > 1 else 0,
@@ -148,6 +210,8 @@ def main():
             'has_citations': bool(cites) and cfg.get('citations', False),
         },
         'topics': topics,
+        'directions': directions,
+        'decided_year': decided,
         'risers': movers[:12],
         'fallers': movers[-12:][::-1],
         'top_papers': [dict({k: v for k, v in r.items() if k != 'topic_ids'},

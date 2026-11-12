@@ -5,12 +5,13 @@ import {
 } from 'recharts'
 // Each page entry calls init() with its own venue's report before rendering,
 // so one component tree serves every venue without a build-time swap.
-let meta, topics, risers, fallers, top_papers, rating_distribution, topicTop
+let meta, topics, risers, fallers, top_papers, rating_distribution, topicTop, directions
 let V, MULTIYEAR, ACCEPTED_ONLY, UNIT, PAGES, CITES
 
 export function init(report, pages = []) {
   ({ meta, topics, risers, fallers, top_papers, rating_distribution } = report)
   topicTop = report.topic_top || {}
+  directions = report.directions || []
   YEARS = meta.years
   V = `${meta.venue} ${meta.latest}`
   MULTIYEAR = meta.years.length > 1
@@ -41,7 +42,12 @@ function useSorted(rows, initial) {
       return desc ? y - x : x - y
     })
   }, [rows, key, desc])
-  const toggle = (k) => { if (k === key) setDesc(!desc); else { setKey(k); setDesc(true) } }
+  const toggle = (k) => {
+    setKey((cur) => {
+      setDesc((d) => (cur === k ? !d : true))
+      return k
+    })
+  }
   return { sorted, key, desc, toggle }
 }
 
@@ -385,6 +391,107 @@ function TopicLeaderboard() {
   )
 }
 
+const SIGNALS = [
+  { k: 'share', label: 'Share', fmt: (r) => `${r.share.toFixed(2)}%` },
+  { k: 'growth', label: 'Growth', fmt: (r) => (r.growth === null ? '—'
+      : `${r.growth > 0 ? '+' : ''}${r.growth.toFixed(2)}`) },
+  { k: 'rating_z', label: 'Rating premium', fmt: (r) => (r.rating_z === null ? '—'
+      : `${r.rating_z > 0 ? '+' : ''}${r.rating_z.toFixed(2)}`) },
+  { k: 'acc', label: 'Accepted', fmt: (r) => (r.acc === null ? '—' : `${r.acc.toFixed(0)}%`) },
+  { k: 'acc_delta', label: 'Accept Δ', fmt: (r) => (r.acc_delta === null ? '—'
+      : `${r.acc_delta > 0 ? '+' : ''}${r.acc_delta.toFixed(1)}`) },
+  { k: 'cites_median', label: 'Median cites', fmt: (r) => (r.cites_median === null ? '—'
+      : n(r.cites_median)) },
+]
+
+function Directions() {
+  const [key, setKey] = useState('rating_z')
+  const [desc, setDesc] = useState(true)
+  const cols = useMemo(
+    () => SIGNALS.filter((c) => directions.some((r) => r[c.k] !== null && r[c.k] !== undefined)),
+    [])
+  const rows = useMemo(() => [...directions].sort((a, b) => {
+    const x = a[key], y = b[key]
+    if (x === null || x === undefined) return 1
+    if (y === null || y === undefined) return -1
+    return desc ? y - x : x - y
+  }), [key, desc])
+  if (rows.length === 0) return null
+  const toggle = (k) => {
+    setKey((cur) => {
+      setDesc((d) => (cur === k ? !d : true))
+      return k
+    })
+  }
+
+  return (
+    <section>
+      <h2>Signals for where the field is going</h2>
+      <p className="note">
+        Per-concept signals for {meta.latest}, over concepts with at least 40 papers. Sort by any
+        column. <strong>Read the caveat below before drawing conclusions from this table</strong>
+        &mdash; it is the most speculative thing on this page.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Concept</th>
+            {cols.map((c) => {
+              const on = key === c.k
+              return (
+                <th key={c.k} className="num sortable"
+                  aria-sort={on ? (desc ? 'descending' : 'ascending') : 'none'}>
+                  <button type="button" onClick={() => toggle(c.k)} aria-label={`Sort by ${c.label}`}>
+                    {c.label}<span className="caret">{on ? (desc ? '\u25be' : '\u25b4') : ''}</span>
+                  </button>
+                </th>
+              )
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td>{r.label}<div className="chips"><span>{n(r.n)} papers</span></div></td>
+              {cols.map((c) => (
+                <td className="num" key={c.k}
+                  style={c.k === 'acc_delta' && r.acc_delta !== null
+                    ? { color: r.acc_delta < -5 ? 'var(--series-2)' : undefined } : undefined}>
+                  {c.fmt(r)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <details>
+        <summary>What these mean, and how well they actually predict</summary>
+        <table>
+          <tbody>
+            <tr><th style={{ width: 150 }}>Share</th><td>Percent of {meta.latest} labelled papers carrying this concept.</td></tr>
+            <tr><th>Growth</th><td>Change in that share since {meta.years.at(-2)}, in percentage points. On its own this tells you where the crowd went, which is not the same as where the opportunity is.</td></tr>
+            <tr><th>Rating premium</th><td>The concept&rsquo;s mean reviewer rating minus the year&rsquo;s mean, in standard deviations. Z-scored because the rating scale changes between years, so raw means are not comparable.</td></tr>
+            {meta.decided_year && <tr><th>Accepted</th><td>Acceptance rate in {meta.decided_year}, the most recent year with decisions. Reflects area-chair judgment, not just reviewer scores.</td></tr>}
+            {meta.decided_year && <tr><th>Accept Δ</th><td>Change in that acceptance rate from the year before, in points. A large negative figure beside strong growth is the clearest crowding signal here: more people are working on it and reviewers are less convinced. Shown in orange below &minus;5.</td></tr>}
+            <tr><th>Median cites</th><td>Median citation count of this concept&rsquo;s papers, from OpenAlex. Independent of the review process entirely.</td></tr>
+            <tr><th style={{ color: 'var(--text-primary)' }}>How predictive?</th><td>
+              Tested on this data: a concept&rsquo;s rating premium correlated with its later growth
+              at <strong>r = +0.37</strong> for 2024&rarr;2025, but only <strong>+0.08</strong> for
+              2025&rarr;2026 and <strong>+0.12</strong> for 2026&rarr;2027. Acceptance rate behaved
+              the same way (+0.31, then +0.16, +0.08). In other words these signals had real
+              predictive power when ICLR was a quarter of its current size and have since decayed
+              to roughly nothing &mdash; plausibly because at 39,000 submissions, with three
+              reviews on a four-point scale, ratings stop discriminating. Treat this table as a
+              description of the present, not a forecast. Anyone telling you otherwise from this
+              data is overreading it.
+            </td></tr>
+          </tbody>
+        </table>
+      </details>
+    </section>
+  )
+}
+
 function Method() {
   return (
     <section>
@@ -433,6 +540,7 @@ export default function App() {
              + ' sorting it by citations re-orders those papers, it does not rank the'
              + ' conference by citation count.' : '')} />
       <TopicLeaderboard />
+      <Directions />
       <Method />
       <footer>
         Built from public OpenReview data. Not affiliated with {meta.venue} or OpenReview.
