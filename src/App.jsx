@@ -27,6 +27,35 @@ const n = (x) => x.toLocaleString('en-US')
 const paper = (id) => `https://openreview.net/forum?id=${id}`
 
 const axis = { stroke: 'var(--text-muted)', fontSize: 12 }
+// Papers with no confident citation match sort to the bottom either way -
+// an unknown value is not a small one.
+function useSorted(rows, initial) {
+  const [key, setKey] = useState(initial)
+  const [desc, setDesc] = useState(true)
+  const sorted = useMemo(() => {
+    const val = (r) => (key === 'cites' ? r.cites : key === 'n' ? r.n : r.mean)
+    return [...rows].sort((a, b) => {
+      const x = val(a), y = val(b)
+      if (x === null || x === undefined) return 1
+      if (y === null || y === undefined) return -1
+      return desc ? y - x : x - y
+    })
+  }, [rows, key, desc])
+  const toggle = (k) => { if (k === key) setDesc(!desc); else { setKey(k); setDesc(true) } }
+  return { sorted, key, desc, toggle }
+}
+
+function SortTh({ label, k, sort }) {
+  const on = sort.key === k
+  return (
+    <th className="num sortable" aria-sort={on ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
+      <button type="button" onClick={() => sort.toggle(k)} aria-label={`Sort by ${label}`}>
+        {label}<span className="caret">{on ? (sort.desc ? '\u25be' : '\u25b4') : ''}</span>
+      </button>
+    </th>
+  )
+}
+
 const cites = (v) => (v === null || v === undefined
   ? <span title="no confident match in OpenAlex" style={{ color: 'var(--text-muted)' }}>&mdash;</span>
   : n(v))
@@ -268,6 +297,7 @@ function Ratings() {
 }
 
 function PaperTable({ rows, caption, note }) {
+  const sort = useSorted(rows, 'mean')
   return (
     <section>
       <h2>{caption}</h2>
@@ -276,12 +306,13 @@ function PaperTable({ rows, caption, note }) {
         <thead>
           <tr>
             <th className="num">#</th><th>Paper</th>
-            <th className="num">Mean</th><th className="num">Reviews</th>
-            {CITES && <th className="num">Citations</th>}
+            <SortTh label="Mean" k="mean" sort={sort} />
+            <SortTh label="Reviews" k="n" sort={sort} />
+            {CITES && <SortTh label="Citations" k="cites" sort={sort} />}
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
+          {sort.sorted.map((r, i) => (
             <tr key={r.id}>
               <td className="num" style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
               <td>
@@ -302,8 +333,10 @@ function PaperTable({ rows, caption, note }) {
 function TopicLeaderboard() {
   const ids = Object.keys(topicTop)
   const [pick, setPick] = useState(ids[0])
+  // hooks must run unconditionally, so resolve a safe `sel` before any return
+  const sel = topicTop[pick] || { label: '', n_rated: 0, papers: [] }
+  const sort = useSorted(sel.papers, 'mean')
   if (ids.length === 0) return null
-  const sel = topicTop[pick]
   return (
     <section>
       <h2>Best-rated work by concept</h2>
@@ -312,6 +345,7 @@ function TopicLeaderboard() {
         three reviews. Useful for &ldquo;what is the strongest work on world models&rdquo; rather
         than only &ldquo;what scored highest overall&rdquo;. Ratings are coarse, so ties are
         common and the order within a tie is by review count, not by merit.
+        {CITES && ' Columns are sortable; citation counts come from OpenAlex.'}
       </p>
       <div className="controls">
         <label className="pickrow">
@@ -327,11 +361,13 @@ function TopicLeaderboard() {
       </div>
       <table>
         <thead>
-          <tr><th className="num">#</th><th>Paper</th><th className="num">Mean</th>
-            <th className="num">Reviews</th>{CITES && <th className="num">Citations</th>}</tr>
+          <tr><th className="num">#</th><th>Paper</th>
+            <SortTh label="Mean" k="mean" sort={sort} />
+            <SortTh label="Reviews" k="n" sort={sort} />
+            {CITES && <SortTh label="Citations" k="cites" sort={sort} />}</tr>
         </thead>
         <tbody>
-          {sel.papers.map((r, i) => (
+          {sort.sorted.map((r, i) => (
             <tr key={r.id}>
               <td className="num" style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
               <td><a href={paper(r.id)} target="_blank" rel="noreferrer">{r.title}</a></td>
@@ -392,7 +428,10 @@ export default function App() {
           + ` rating, among papers with at least three reviews.`
           + (meta.rating_scales[meta.latest] ? ` On a ${meta.rating_scales[meta.latest]} scale ties`
              + ` are common; order within a tie is by review count.` : '')
-          + (ACCEPTED_ONLY ? '' : ' A high score here is not an acceptance - no decisions have been released.')} />
+          + (ACCEPTED_ONLY ? '' : ' A high score here is not an acceptance - no decisions have been released.')
+          + (CITES ? ' Columns are sortable, but this set is the top by rating:'
+             + ' sorting it by citations re-orders those papers, it does not rank the'
+             + ' conference by citation count.' : '')} />
       <TopicLeaderboard />
       <Method />
       <footer>
